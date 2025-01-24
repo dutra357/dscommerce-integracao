@@ -3,6 +3,7 @@ package com.devsuperior.dscommerce.controllersIT;
 import com.devsuperior.dscommerce.dto.ProductDTO;
 import com.devsuperior.dscommerce.entities.Product;
 import com.devsuperior.dscommerce.tests.ProductFactory;
+import com.devsuperior.dscommerce.utils.TokenUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,17 +28,20 @@ public class ProductControllerIT {
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private TokenUtil tokenUtil;
 
-    private String productName, bearerToken;
+    private String productName, bearerTokenAdmin, bearerTokenClient;
     private Product product;
     private ProductDTO productDTO;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         productName = "MacBook";
         product = ProductFactory.createProduct();
         productDTO = new ProductDTO(product);
-        bearerToken = "";
+        bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
+        bearerTokenClient = tokenUtil.obtainAccessToken(mockMvc, "maria@gmail.com","123456");
 
     }
 
@@ -64,6 +68,15 @@ public class ProductControllerIT {
 
     @Test
     public void insertShouldReturnProductDtoWherLoggedAsAdmin() throws Exception {
+        String productJson = objectMapper.writeValueAsString(productDTO);
 
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .post("/products")
+                        .header("Authorization", "Bearer " + bearerTokenAdmin)
+                        .content(productJson)
+                        .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isCreated());
     }
 }
