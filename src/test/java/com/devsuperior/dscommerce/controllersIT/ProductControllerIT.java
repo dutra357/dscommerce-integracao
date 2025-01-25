@@ -31,7 +31,7 @@ public class ProductControllerIT {
     @Autowired
     private TokenUtil tokenUtil;
 
-    private String productName, bearerTokenAdmin, bearerTokenClient;
+    private String productName, bearerTokenAdmin, bearerTokenClient, invalidToken;
     private Product product;
     private ProductDTO productDTO;
 
@@ -40,8 +40,7 @@ public class ProductControllerIT {
         productName = "MacBook";
         product = ProductFactory.createProduct();
         productDTO = new ProductDTO(product);
-        bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
-        bearerTokenClient = tokenUtil.obtainAccessToken(mockMvc, "maria@gmail.com","123456");
+        //bearerTokenClient = tokenUtil.obtainAccessToken(mockMvc, "maria@gmail.com","123456");
 
     }
 
@@ -67,7 +66,9 @@ public class ProductControllerIT {
     }
 
     @Test
-    public void insertShouldReturnProductDtoWherLoggedAsAdmin() throws Exception {
+    public void insertShouldReturnProductDtoWhenLoggedAsAdmin() throws Exception {
+        bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
+
         String productJson = objectMapper.writeValueAsString(productDTO);
 
         ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
@@ -79,4 +80,24 @@ public class ProductControllerIT {
 
         resultActions.andExpect(status().isCreated());
     }
+    @Test
+    public void insertShouldThrowUnProcessableEntityWhenNameIsInvalid() throws Exception {
+        bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
+
+        product.setName("");
+        productDTO = new ProductDTO(product);
+        String productJson = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .post("/products")
+                .header("Authorization", "Bearer " + bearerTokenAdmin)
+                .content(productJson)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isUnprocessableEntity());
+    }
+
+
+
 }
