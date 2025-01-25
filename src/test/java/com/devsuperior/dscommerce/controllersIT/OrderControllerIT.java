@@ -27,21 +27,20 @@ public class OrderControllerIT {
     @Autowired
     private TokenUtil tokenUtil;
 
-    private String productName, bearerTokenAdmin, bearerTokenClient, invalidToken;
-    private Product product;
-    private ProductDTO productDTO;
+    private String bearerTokenAdmin;
+    private String bearerTokenClient;
+    private String invalidToken;
     private Long existsId, notExistingId;
 
     @BeforeEach
     void setUp() throws Exception {
-        productName = "MacBook";
-        product = ProductFactory.createProduct();
-        productDTO = new ProductDTO(product);
+        String productName = "MacBook";
+        Product product = ProductFactory.createProduct();
+        ProductDTO productDTO = new ProductDTO(product);
 
         notExistingId  = 999L;
         existsId = 1L;
     }
-
 
     @Test
     public void findByIdShouldReturnOrderWhenLoggedAsAdmin() throws Exception {
@@ -70,11 +69,12 @@ public class OrderControllerIT {
 
         resultActions.andExpect(status().isOk());
         resultActions.andExpect(jsonPath("$.id").value(1));
-        resultActions.andExpect(jsonPath("$.items.[0].name").value("The Lord of the Rings"));
+        resultActions.andExpect(jsonPath("$.client.name").value("Maria Brown"));
+        resultActions.andExpect(jsonPath("$.items[0].name").value("The Lord of the Rings"));
     }
 
     @Test
-    public void findByIdShouldReturnForbiddenWhenLoggedAsClientAndOrderIsNotYours() throws Exception {
+    public void findByIdShouldReturnForbiddenWhenLoggedAsClientAndOrderIsNotBelongsUser() throws Exception {
         bearerTokenClient = tokenUtil.obtainAccessToken(mockMvc, "maria@gmail.com","123456");
 
         ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
