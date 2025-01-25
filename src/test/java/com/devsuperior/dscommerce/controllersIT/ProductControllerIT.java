@@ -40,8 +40,6 @@ public class ProductControllerIT {
         productName = "MacBook";
         product = ProductFactory.createProduct();
         productDTO = new ProductDTO(product);
-        //bearerTokenClient = tokenUtil.obtainAccessToken(mockMvc, "maria@gmail.com","123456");
-
     }
 
     @Test
@@ -168,6 +166,36 @@ public class ProductControllerIT {
                 .accept(MediaType.APPLICATION_JSON));
 
         resultActions.andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    public void insertShouldReturnForbiddenWhenLoggedAsClient() throws Exception {
+        bearerTokenClient = tokenUtil.obtainAccessToken(mockMvc, "maria@gmail.com","123456");
+
+        String productJson = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .post("/products")
+                .header("Authorization", "Bearer " + bearerTokenClient)
+                .content(productJson)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void insertShouldReturnInvalidTokenWhenTokenIsInvalid() throws Exception {
+        String productJson = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .post("/products")
+                .header("Authorization", "Bearer " + invalidToken)
+                .content(productJson)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isUnauthorized());
     }
 
 }
