@@ -98,6 +98,22 @@ public class ProductControllerIT {
         resultActions.andExpect(status().isUnprocessableEntity());
     }
 
+    @Test
+    public void insertShouldThrowUnProcessableEntityWhenDescriptionIsInvalid() throws Exception {
+        bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
 
+        product.setDescription("as");
+        productDTO = new ProductDTO(product);
+        String productJson = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .post("/products")
+                .header("Authorization", "Bearer " + bearerTokenAdmin)
+                .content(productJson)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isUnprocessableEntity());
+    }
 
 }
