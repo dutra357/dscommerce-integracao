@@ -116,4 +116,58 @@ public class ProductControllerIT {
         resultActions.andExpect(status().isUnprocessableEntity());
     }
 
+    @Test
+    public void insertShouldThrowUnProcessableEntityWhenPriceIsZero() throws Exception {
+        bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
+
+        product.setPrice(0.0);
+        productDTO = new ProductDTO(product);
+        String productJson = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .post("/products")
+                .header("Authorization", "Bearer " + bearerTokenAdmin)
+                .content(productJson)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    public void insertShouldThrowUnProcessableEntityWhenPriceIsNegative() throws Exception {
+        bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
+
+        product.setPrice(-10.0);
+        productDTO = new ProductDTO(product);
+        String productJson = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .post("/products")
+                .header("Authorization", "Bearer " + bearerTokenAdmin)
+                .content(productJson)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    public void insertShouldThrowUnProcessableEntityWhenProductDoNotHaveCategory() throws Exception {
+        bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
+
+        product.getCategories().clear();
+        productDTO = new ProductDTO(product);
+        String productJson = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .post("/products")
+                .header("Authorization", "Bearer " + bearerTokenAdmin)
+                .content(productJson)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isUnprocessableEntity());
+    }
+
 }
