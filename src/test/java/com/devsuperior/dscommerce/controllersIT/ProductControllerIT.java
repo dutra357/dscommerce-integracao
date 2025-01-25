@@ -238,10 +238,8 @@ public class ProductControllerIT {
     public void deleteShouldThrowBadRequestWhenLoggedAsAdminAndProductIsDependent() throws Exception {
         bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
 
-        //Order order = OrderFactory.createOrder(UserFactory.createAdminUser());
-
         ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
-                .delete("/products/{id}", 1)
+                .delete("/products/{id}", existsId)
                 .header("Authorization", "Bearer " + bearerTokenAdmin)
                 .accept(MediaType.APPLICATION_JSON));
 
@@ -253,7 +251,7 @@ public class ProductControllerIT {
         bearerTokenClient = tokenUtil.obtainAccessToken(mockMvc, "maria@gmail.com","123456");
 
         ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
-                .delete("/products/{id}", 1)
+                .delete("/products/{id}", existsId)
                 .header("Authorization", "Bearer " + bearerTokenClient)
                 .accept(MediaType.APPLICATION_JSON));
 
@@ -264,7 +262,7 @@ public class ProductControllerIT {
     public void deleteShouldReturnForbiddenWhenNotLogged() throws Exception {
 
         ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
-                .delete("/products/{id}", 1)
+                .delete("/products/{id}", existsId)
                 .header("Authorization", "Bearer " + bearerTokenAdmin)
                 .accept(MediaType.APPLICATION_JSON));
 
