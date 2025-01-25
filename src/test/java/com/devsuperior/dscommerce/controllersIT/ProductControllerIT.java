@@ -1,12 +1,17 @@
 package com.devsuperior.dscommerce.controllersIT;
 
 import com.devsuperior.dscommerce.dto.ProductDTO;
+import com.devsuperior.dscommerce.entities.Order;
 import com.devsuperior.dscommerce.entities.Product;
+import com.devsuperior.dscommerce.services.exceptions.ResourceNotFoundException;
+import com.devsuperior.dscommerce.tests.OrderFactory;
 import com.devsuperior.dscommerce.tests.ProductFactory;
+import com.devsuperior.dscommerce.tests.UserFactory;
 import com.devsuperior.dscommerce.utils.TokenUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -34,12 +40,16 @@ public class ProductControllerIT {
     private String productName, bearerTokenAdmin, bearerTokenClient, invalidToken;
     private Product product;
     private ProductDTO productDTO;
+    private Long dependentId, existsId;
 
     @BeforeEach
     void setUp() throws Exception {
         productName = "MacBook";
         product = ProductFactory.createProduct();
         productDTO = new ProductDTO(product);
+
+        dependentId = 3L;
+        existsId = 1L;
     }
 
     @Test
@@ -78,6 +88,7 @@ public class ProductControllerIT {
 
         resultActions.andExpect(status().isCreated());
     }
+
     @Test
     public void insertShouldThrowUnProcessableEntityWhenNameIsInvalid() throws Exception {
         bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
@@ -193,6 +204,68 @@ public class ProductControllerIT {
                 .header("Authorization", "Bearer " + invalidToken)
                 .content(productJson)
                 .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void deleteShouldReturnNoContentWhenLoggedAsAdmin() throws Exception {
+        bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .delete("/products/{id}", existsId)
+                .header("Authorization", "Bearer " + bearerTokenAdmin)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void deleteShouldReturnNotFoundExceptionWhenLoggedAsAdminAndProductDoNotExists() throws Exception {
+        bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .delete("/products/{id}", 9999)
+                .header("Authorization", "Bearer " + bearerTokenAdmin)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void deleteShouldThrowBadRequestWhenLoggedAsAdminAndProductIsDependent() throws Exception {
+        bearerTokenAdmin = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com","123456");
+
+        //Order order = OrderFactory.createOrder(UserFactory.createAdminUser());
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .delete("/products/{id}", 1)
+                .header("Authorization", "Bearer " + bearerTokenAdmin)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void deleteShouldReturnForbiddenWhenLoggedAsClient() throws Exception {
+        bearerTokenClient = tokenUtil.obtainAccessToken(mockMvc, "maria@gmail.com","123456");
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .delete("/products/{id}", 1)
+                .header("Authorization", "Bearer " + bearerTokenClient)
+                .accept(MediaType.APPLICATION_JSON));
+
+        resultActions.andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void deleteShouldReturnForbiddenWhenNotLogged() throws Exception {
+
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders
+                .delete("/products/{id}", 1)
+                .header("Authorization", "Bearer " + bearerTokenAdmin)
                 .accept(MediaType.APPLICATION_JSON));
 
         resultActions.andExpect(status().isUnauthorized());
